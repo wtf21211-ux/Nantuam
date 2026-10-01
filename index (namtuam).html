@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flood Safety AI - แอปวิเคราะห์และรับมือน้ำท่วม</title>
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', sans-serif; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 min-h-screen text-slate-100 font-sans pb-12">
+
+  <!-- 🌊 Top Navigation Bar -->
+  <nav class="glass-card border-b border-white/10 sticky top-0 z-50 px-4 py-3 bg-slate-900/60">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <div class="p-2 bg-blue-500/20 rounded-xl border border-blue-400/30 text-blue-400">
+          <i data-lucide="waves" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-white tracking-wide leading-none">FloodSafety AI</h1>
+          <span class="text-[10px] text-blue-300 font-light">ระบบวิเคราะห์ความเสี่ยงจากภาพ</span>
+        </div>
+      </div>
+      
+      <!-- User Badge & Logout -->
+      <div id="user-profile" class="hidden flex items-center gap-2">
+        <span id="user-email" class="text-xs bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-slate-200 truncate max-w-[130px]"></span>
+        <button id="logout-btn" class="p-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 rounded-xl transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-md mx-auto px-4 mt-6">
+
+    <!-- 🔒 Section 1: Glass Auth Screen -->
+    <div id="auth-section" class="glass-card rounded-3xl p-6 border border-white/10 shadow-2xl text-slate-800">
+      
+      <!-- Auth Tab Switcher -->
+      <div class="flex bg-slate-200/60 p-1 rounded-2xl mb-6">
+        <button id="tab-login" class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-white shadow-sm text-blue-600 transition">
+          เข้าสู่ระบบ
+        </button>
+        <button id="tab-register" class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-500 hover:text-slate-800 transition">
+          สมัครสมาชิก
+        </button>
+      </div>
+
+      <form id="auth-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">อีเมล</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-5 h-5 absolute left-3.5 top-3 text-slate-400"></i>
+            <input type="email" id="auth-email" required placeholder="name@example.com"
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">รหัสผ่าน</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-5 h-5 absolute left-3.5 top-3 text-slate-400"></i>
+            <input type="password" id="auth-password" required placeholder="••••••••"
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm">
+          </div>
+        </div>
+
+        <p id="auth-error" class="text-xs text-red-500 bg-red-50 p-3 rounded-xl border border-red-200 hidden flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="auth-error-text"></span>
+        </p>
+
+        <button type="submit" id="auth-submit-btn" 
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium shadow-lg shadow-blue-600/30 transition flex justify-center items-center gap-2 text-sm mt-2">
+          <span id="auth-btn-text">เข้าสู่ระบบ</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+
+
+    <!-- 📸 Section 2: Main App Screen -->
+    <div id="app-section" class="hidden space-y-5">
+      
+      <!-- Upload Card -->
+      <div class="glass-card rounded-3xl p-6 border border-white/10 shadow-2xl text-slate-800">
+        <div class="text-center mb-5">
+          <h2 class="text-lg font-bold text-slate-900">ถ่ายรูปวิเคราะห์สถานการณ์</h2>
+          <p class="text-xs text-slate-500 mt-0.5">ถ่ายให้ติดระดับน้ำ รถยนต์ หรือสิ่งกีดขวางรอบตัว</p>
+        </div>
+
+        <input type="file" id="image-input" accept="image/*" capture="environment" class="hidden">
+
+        <!-- Image Drop/Upload Zone -->
+        <div id="select-img-btn" class="border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-50 rounded-2xl p-6 text-center cursor-pointer transition relative overflow-hidden group">
+          
+          <div id="upload-placeholder" class="space-y-2">
+            <div class="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition">
+              <i data-lucide="camera" class="w-6 h-6"></i>
+            </div>
+            <p class="text-xs font-semibold text-blue-600">กดที่นี่เพื่อถ่ายรูป หรือ เลือกจากคลังภาพ</p>
+            <p class="text-[10px] text-slate-400">รองรับไฟล์ JPG, PNG</p>
+          </div>
+
+          <!-- Preview Image Container -->
+          <div id="preview-container" class="hidden relative">
+            <img id="image-preview" class="w-full h-52 object-cover rounded-xl border border-slate-200">
+            <button id="reselect-btn" class="absolute top-2 right-2 bg-slate-900/70 hover:bg-slate-900 text-white p-1.5 rounded-full backdrop-blur transition">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <button id="analyze-btn" disabled 
+          class="w-full mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-blue-600/30 transition flex justify-center items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>วิเคราะห์ความเสี่ยงด้วย AI</span>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="hidden glass-card rounded-3xl p-8 border border-white/10 shadow-xl text-center space-y-3">
+        <div class="relative w-12 h-12 mx-auto">
+          <div class="w-12 h-12 rounded-full border-4 border-blue-200 animate-spin border-t-blue-600"></div>
+          <i data-lucide="sparkles" class="w-5 h-5 text-blue-600 absolute top-3.5 left-3.5 animate-pulse"></i>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-slate-800">กำลังวิเคราะห์ภาพถ่าย...</p>
+          <p class="text-xs text-slate-500 mt-1">ประเมินระดับน้ำ จุดเสี่ยงไฟรั่ว และข้อควรปฏิบัติ</p>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div id="result-card" class="hidden glass-card rounded-3xl p-6 border border-white/10 shadow-2xl text-slate-800 space-y-5">
+        
+        <!-- Hazard Badge Header -->
+        <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div>
+            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">ระดับความเสี่ยง</span>
+            <div id="hazard-title" class="text-lg font-bold text-slate-800">วิเคราะห์เสร็จสิ้น</div>
+          </div>
+          <span id="hazard-badge" class="px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+            <span id="hazard-text">HIGH</span>
+          </span>
+        </div>
+
+        <!-- Estimated Depth -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-start gap-3">
+          <div class="p-2 bg-blue-100 text-blue-600 rounded-xl shrink-0 mt-0.5">
+            <i data-lucide="ruler" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-400">ระดับน้ำโดยประมาณ</p>
+            <p id="water-depth" class="font-bold text-slate-800 text-sm mt-0.5">-</p>
+          </div>
+        </div>
+
+        <!-- Detected Risks -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i>
+            ความเสี่ยงที่ตรวจพบในภาพ
+          </h4>
+          <ul id="risks-list" class="space-y-1.5 text-xs text-slate-600"></ul>
+        </div>
+
+        <!-- Immediate Actions -->
+        <div class="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl space-y-2">
+          <h4 class="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+            <i data-lucide="siren" class="w-4 h-4 text-amber-600 animate-bounce"></i>
+            สิ่งที่ต้องทำทันที
+          </h4>
+          <ul id="actions-list" class="space-y-1.5 text-xs text-amber-900 font-medium"></ul>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 🛠️ JavaScript Logic (Firebase Auth + Vision API Integration) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 🔑 ใส่ค่า Firebase Config ของคุณตรงนี้
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNmrw8W1OpdygQbOKT...",
+      authDomain: "namtuam-1056e.firebaseapp.com",
+      projectId: "namtuam-1056e",
+      storageBucket: "namtuam-1056e.appspot.com",
+      messagingSenderId: "502238625371",
+      appId: "1:502238625371:web:36a4ef...",
+      measurementId: "G-WVD45NLTGE"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Elements
+    const authSection = document.getElementById("auth-section");
+    const appSection = document.getElementById("app-section");
+    const userProfile = document.getElementById("user-profile");
+    const userEmail = document.getElementById("user-email");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const authForm = document.getElementById("auth-form");
+    const authEmail = document.getElementById("auth-email");
+    const authPassword = document.getElementById("auth-password");
+    const authError = document.getElementById("auth-error");
+    const authErrorText = document.getElementById("auth-error-text");
+    const authBtnText = document.getElementById("auth-btn-text");
+
+    const imageInput = document.getElementById("image-input");
+    const selectImgBtn = document.getElementById("select-img-btn");
+    const uploadPlaceholder = document.getElementById("upload-placeholder");
+    const previewContainer = document.getElementById("preview-container");
+    const imagePreview = document.getElementById("image-preview");
+    const reselectBtn = document.getElementById("reselect-btn");
+    const analyzeBtn = document.getElementById("analyze-btn");
+
+    const loadingState = document.getElementById("loading-state");
+    const resultCard = document.getElementById("result-card");
+    const hazardBadge = document.getElementById("hazard-badge");
+    const hazardText = document.getElementById("hazard-text");
+    const waterDepth = document.getElementById("water-depth");
+    const risksList = document.getElementById("risks-list");
+    const actionsList = document.getElementById("actions-list");
+
+    const API_URL = "http://localhost:8000/analyze-flood";
+    let isLoginMode = true;
+    let currentUserToken = null;
+
+    // --- Tab Switcher (Login / Register) ---
+    tabLogin.addEventListener("click", () => {
+      isLoginMode = true;
+      tabLogin.className = "flex-1 py-2.5 text-sm font-semibold rounded-xl bg-white shadow-sm text-blue-600 transition";
+      tabRegister.className = "flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-500 hover:text-slate-800 transition";
+      authBtnText.textContent = "เข้าสู่ระบบ";
+      hideError();
+    });
+
+    tabRegister.addEventListener("click", () => {
+      isLoginMode = false;
+      tabRegister.className = "flex-1 py-2.5 text-sm font-semibold rounded-xl bg-white shadow-sm text-blue-600 transition";
+      tabLogin.className = "flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-500 hover:text-slate-800 transition";
+      authBtnText.textContent = "สร้างบัญชีใหม่";
+      hideError();
+    });
+
+    function showError(msg) {
+      authErrorText.textContent = msg;
+      authError.classList.remove("hidden");
+    }
+
+    function hideError() {
+      authError.classList.add("hidden");
+    }
+
+    // --- Firebase Auth Handle ---
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const email = authEmail.value;
+      const password = authPassword.value;
+
+      try {
+        if (isLoginMode) {
+          await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          await createUserWithEmailAndPassword(auth, email, password);
+        }
+      } catch (err) {
+        showError(err.message.replace("Firebase: ", ""));
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUserToken = await user.getIdToken();
+        userEmail.textContent = user.email;
+        authSection.classList.add("hidden");
+        appSection.classList.remove("hidden");
+        userProfile.classList.remove("hidden");
+      } else {
+        currentUserToken = null;
+        authSection.classList.remove("hidden");
+        appSection.classList.add("hidden");
+        userProfile.classList.add("hidden");
+      }
+    });
+
+    // --- Image Handling ---
+    selectImgBtn.addEventListener("click", (e) => {
+      if (e.target.closest("#reselect-btn")) return;
+      imageInput.click();
+    });
+
+    imageInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          imagePreview.src = evt.target.result;
+          uploadPlaceholder.classList.add("hidden");
+          previewContainer.classList.remove("hidden");
+          analyzeBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    reselectBtn.addEventListener("click", () => {
+      imageInput.value = "";
+      imagePreview.src = "";
+      previewContainer.classList.add("hidden");
+      uploadPlaceholder.classList.remove("hidden");
+      analyzeBtn.disabled = true;
+      resultCard.classList.add("hidden");
+    });
+
+    // --- Submit to Backend API ---
+    analyzeBtn.addEventListener("click", async () => {
+      const file = imageInput.files[0];
+      if (!file || !currentUserToken) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      loadingState.classList.remove("hidden");
+      resultCard.classList.add("hidden");
+      analyzeBtn.disabled = true;
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${currentUserToken}` },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์");
+        }
+
+        const data = await response.json();
+        renderResult(data.analysis);
+
+      } catch (err) {
+        alert("ข้อผิดพลาด: " + err.message);
+      } finally {
+        loadingState.classList.add("hidden");
+        analyzeBtn.disabled = false;
+      }
+    });
+
+    // --- Render Analysis Result ---
+    function renderResult(res) {
+      const levelColors = {
+        CRITICAL: "bg-red-500/10 border-red-500/30 text-red-600",
+        HIGH: "bg-orange-500/10 border-orange-500/30 text-orange-600",
+        MEDIUM: "bg-amber-500/10 border-amber-500/30 text-amber-600",
+        LOW: "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
+      };
+
+      const level = res.hazard_level || "UNKNOWN";
+      hazardBadge.className = `px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 ${levelColors[level] || 'bg-slate-100 text-slate-700'}`;
+      hazardText.textContent = level;
+
+      waterDepth.textContent = res.estimated_depth || "ไม่ระบุ";
+
+      risksList.innerHTML = (res.detected_risks || [])
+        .map(risk => `<li class="flex items-start gap-1.5"><span class="text-red-500">•</span>${risk}</li>`).join("");
+
+      actionsList.innerHTML = (res.immediate_actions || [])
+        .map(act => `<li class="flex items-start gap-1.5"><span class="text-amber-600">✓</span>${act}</li>`).join("");
+
+      resultCard.classList.remove("hidden");
+    }
+  </script>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
