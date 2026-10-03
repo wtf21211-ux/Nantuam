@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flood Safety AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Kanit', sans-serif; } </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col max-w-md mx-auto border-x border-slate-800">
+
+  <!-- Header -->
+  <header class="p-4 bg-slate-800/80 backdrop-blur sticky top-0 z-10 border-b border-slate-700 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="p-2 bg-blue-500/20 text-blue-400 rounded-xl">
+        <i data-lucide="waves" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm leading-none">FloodSafety AI</h1>
+        <span class="text-[10px] text-slate-400">ระบบวิเคราะห์ภัยพิบัติ</span>
+      </div>
+    </div>
+    
+    <div id="user-info" class="hidden flex items-center gap-2">
+      <span id="display-username" class="text-xs bg-slate-700 px-2.5 py-1 rounded-full text-slate-300"></span>
+      <button id="logout-btn" class="p-1 text-slate-400 hover:text-red-400">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Auth Box ( Login / Register ) -->
+  <div id="auth-container" class="p-6 m-4 bg-slate-800 rounded-2xl border border-slate-700 space-y-4">
+    <div class="flex bg-slate-900 p-1 rounded-xl">
+      <button id="tab-login" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white">เข้าสู่ระบบ</button>
+      <button id="tab-register" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400">สมัครสมาชิก</button>
+    </div>
+
+    <form id="auth-form" class="space-y-3">
+      <div>
+        <label class="text-[11px] text-slate-400">Username</label>
+        <input type="text" id="auth-username" required placeholder="ตั้งชื่อผู้ใช้" class="w-full bg-slate-900 border border-slate-700 text-xs p-2.5 rounded-xl outline-none focus:border-blue-500 mt-1">
+      </div>
+      <div>
+        <label class="text-[11px] text-slate-400">Password</label>
+        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 text-xs p-2.5 rounded-xl outline-none focus:border-blue-500 mt-1">
+      </div>
+      <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-xs py-2.5 rounded-xl font-semibold transition">เข้าสู่ระบบ</button>
+    </form>
+  </div>
+
+  <!-- Chat Container -->
+  <div id="chat-app" class="hidden flex-1 flex flex-col">
+    <div id="chat-container" class="flex-1 p-4 space-y-4 overflow-y-auto">
+      <div class="flex gap-2 items-start">
+        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 text-xs font-bold">AI</div>
+        <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700 text-xs text-slate-200 leading-relaxed max-w-[85%]">
+          ยินดีต้อนรับครับ! อัปโหลดภาพถ่ายสถานการณ์ หรือพิมพ์ข้อความสอบถามได้เลยครับ 🌊
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Image Box -->
+    <div id="preview-box" class="hidden px-4 py-2 bg-slate-800/50 border-t border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img id="img-preview" class="w-10 h-10 object-cover rounded-lg border border-slate-600">
+        <span class="text-xs text-slate-300">แนบรูปแล้ว</span>
+      </div>
+      <button id="remove-img-btn" class="p-1 text-slate-400 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="p-3 bg-slate-800 border-t border-slate-700 sticky bottom-0">
+      <form id="chat-form" class="flex items-center gap-2">
+        <input type="file" id="file-input" accept="image/*" class="hidden">
+        <button type="button" id="upload-btn" class="p-2.5 bg-slate-700 text-slate-300 rounded-xl"><i data-lucide="image" class="w-5 h-5"></i></button>
+        <input type="text" id="text-input" placeholder="พิมพ์ถาม หรืออธิบายเพิ่ม..." class="flex-1 bg-slate-900 border border-slate-700 text-xs px-3 py-2.5 rounded-xl outline-none focus:border-blue-500">
+        <button type="submit" class="p-2.5 bg-blue-600 text-white rounded-xl"><i data-lucide="send" class="w-5 h-5"></i></button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      onAuthStateChanged, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 🔑 แปะ Firebase Config ของคุณตรงนี้
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNmrw8W1OpdygQbOKT...",
+      authDomain: "namtuam-1056e.firebaseapp.com",
+      projectId: "namtuam-1056e",
+      storageBucket: "namtuam-1056e.appspot.com",
+      messagingSenderId: "502238625371",
+      appId: "1:502238625371:web:36a4ef..."
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ใส่ URL ที่ได้จาก Vercel ตรงนี้ทีหลัง
+    const API_URL = "http://localhost:8000/chat-analyze"; 
+
+    const authContainer = document.getElementById("auth-container");
+    const chatApp = document.getElementById("chat-app");
+    const userInfo = document.getElementById("user-info");
+    const displayUsername = document.getElementById("display-username");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const authForm = document.getElementById("auth-form");
+    const authUsername = document.getElementById("auth-username");
+    const authPassword = document.getElementById("auth-password");
+    const authSubmitBtn = document.getElementById("auth-submit-btn");
+
+    let isLoginMode = true;
+
+    tabLogin.addEventListener("click", () => {
+      isLoginMode = true;
+      tabLogin.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white";
+      tabRegister.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400";
+      authSubmitBtn.textContent = "เข้าสู่ระบบ";
+    });
+
+    tabRegister.addEventListener("click", () => {
+      isLoginMode = false;
+      tabRegister.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white";
+      tabLogin.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400";
+      authSubmitBtn.textContent = "สร้างบัญชีใหม่";
+    });
+
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = authUsername.value.trim();
+      const password = authPassword.value;
+      const fakeEmail = `${username}@app.local`;
+
+      try {
+        if (isLoginMode) {
+          await signInWithEmailAndPassword(auth, fakeEmail, password);
+        } else {
+          await createUserWithEmailAndPassword(auth, fakeEmail, password);
+        }
+      } catch (err) {
+        alert("ข้อผิดพลาด: " + err.message.replace("Firebase: ", ""));
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const username = user.email.split("@")[0];
+        displayUsername.textContent = username;
+        authContainer.classList.add("hidden");
+        chatApp.classList.remove("hidden");
+        userInfo.classList.remove("hidden");
+      } else {
+        authContainer.classList.remove("hidden");
+        chatApp.classList.add("hidden");
+        userInfo.classList.add("hidden");
+      }
+    });
+
+    // Chat Functions
+    const chatContainer = document.getElementById("chat-container");
+    const chatForm = document.getElementById("chat-form");
+    const fileInput = document.getElementById("file-input");
+    const uploadBtn = document.getElementById("upload-btn");
+    const textInput = document.getElementById("text-input");
+    const previewBox = document.getElementById("preview-box");
+    const imgPreview = document.getElementById("img-preview");
+    const removeImgBtn = document.getElementById("remove-img-btn");
+
+    let selectedFile = null;
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files[0]) {
+        selectedFile = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          imgPreview.src = evt.target.result;
+          previewBox.classList.remove("hidden");
+        };
+        reader.readAsDataURL(selectedFile);
+      }
+    });
+
+    removeImgBtn.addEventListener("click", () => {
+      selectedFile = null;
+      fileInput.value = "";
+      previewBox.classList.add("hidden");
+    });
+
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = textInput.value.trim();
+      if (!msg && !selectedFile) return;
+
+      appendUserMsg(msg, selectedFile);
+
+      const formData = new FormData();
+      if (msg) formData.append("message", msg);
+      if (selectedFile) formData.append("file", selectedFile);
+
+      textInput.value = "";
+      selectedFile = null;
+      fileInput.value = "";
+      previewBox.classList.add("hidden");
+
+      try {
+        const res = await fetch(API_URL, { method: "POST", body: formData });
+        const data = await res.json();
+        appendAIMsg(data.reply);
+      } catch (err) {
+        appendAIMsg("เกิดข้อผิดพลาดในการเชื่อมต่อครับ 😅");
+      }
+    });
+
+    function appendUserMsg(text, file) {
+      const div = document.createElement("div");
+      div.className = "flex gap-2 items-start justify-end";
+      let imgHtml = file ? `<img src="${URL.createObjectURL(file)}" class="w-40 h-28 object-cover rounded-xl mb-1">` : "";
+      div.innerHTML = `<div class="bg-blue-600 p-3 rounded-2xl rounded-tr-none text-xs text-white max-w-[85%]">${imgHtml}${text}</div>`;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function appendAIMsg(text) {
+      const div = document.createElement("div");
+      div.className = "flex gap-2 items-start";
+      div.innerHTML = `<div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 text-xs font-bold">AI</div><div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700 text-xs text-slate-200 leading-relaxed max-w-[85%] whitespace-pre-line">${text}</div>`;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  </script>
+  <script> lucide.createIcons(); </script>
+</body>
+</html>
