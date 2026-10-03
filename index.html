@@ -34,8 +34,8 @@
   <!-- Auth Box ( Login / Register ) -->
   <div id="auth-container" class="p-6 m-4 bg-slate-800 rounded-2xl border border-slate-700 space-y-4">
     <div class="flex bg-slate-900 p-1 rounded-xl">
-      <button id="tab-login" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white">เข้าสู่ระบบ</button>
-      <button id="tab-register" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400">สมัครสมาชิก</button>
+      <button type="button" id="tab-login" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white">เข้าสู่ระบบ</button>
+      <button type="button" id="tab-register" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400">สมัครสมาชิก</button>
     </div>
 
     <form id="auth-form" class="space-y-3">
@@ -92,24 +92,20 @@
       signOut 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // 🔑 แปะ Firebase Config ของคุณตรงนี้
+    // 🔑 Firebase Config (แก้ไขจุดที่เขียนซ้อนกันเรียบร้อยแล้ว)
     const firebaseConfig = {
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDNmrw8W10pdygQbOKTs6Fojp_18kNG_6I",
-  authDomain: "namtuam-1056e.firebaseapp.com",
-  projectId: "namtuam-1056e",
-  storageBucket: "namtuam-1056e.firebasestorage.app",
-  messagingSenderId: "502238625371",
-  appId: "1:502238625371:web:36a4efacd3788d1ee6497e",
-  measurementId: "G-WVD45NLTGE"
-};
+      apiKey: "AIzaSyDNmrw8W10pdygQbOKTs6Fojp_18kNG_6I",
+      authDomain: "namtuam-1056e.firebaseapp.com",
+      projectId: "namtuam-1056e",
+      storageBucket: "namtuam-1056e.firebasestorage.app",
+      messagingSenderId: "502238625371",
+      appId: "1:502238625371:web:36a4efacd3788d1ee6497e",
+      measurementId: "G-WVD45NLTGE"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // ใส่ URL ที่ได้จาก Vercel ตรงนี้ทีหลัง
     const API_URL = "https://nantuam-fcl5.vercel.app/chat-analyze";
 
     const authContainer = document.getElementById("auth-container");
