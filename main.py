@@ -31,7 +31,7 @@ async def chat_analyze(
     file: UploadFile = File(None)
 ):
     if not client:
-        return {"reply": "❌ ยังไม่ได้ตั้งค่า GROQ_API_KEY ใน Vercel Environment Variables"}
+        return {"reply": "❌ ยังไม่ได้ตั้งค่า GROQ_API_KEY ใน Environment Variables"}
 
     try:
         system_prompt = """
@@ -41,8 +41,8 @@ async def chat_analyze(
         1. ถ้ามีภาพ: ตรวจสอบความเสี่ยงน้ำท่วม/จุดอันตราย ระบุระดับความเสี่ยง และวิธีป้องกัน
         2. ถ้าเป็นข้อความ: ตอบคำถามเกี่ยวกับความปลอดภัยและการเตรียมรับมือน้ำท่วมอย่างกระชับ ชัดเจน
         """
-        
-        # 1. กรณีมีภาพแนบมา -> ใช้ llama-3.2-90b-vision-preview (หรือ qwen/qwen3.8-27b)
+
+        # 1. กรณีมีภาพแนบมา -> ใช้ Qwen 3.8 27B (โมเดล Vision ตัวเดียวที่ Groq เปิดอยู่)
         if file and file.filename:
             contents = await file.read()
             base64_image = base64.b64encode(contents).decode('utf-8')
@@ -63,13 +63,13 @@ async def chat_analyze(
             ]
 
             completion = client.chat.completions.create(
-                model="llama-3.2-90b-vision-preview",
+                model="qwen/qwen3.8-27b",
                 messages=messages_payload,
                 temperature=0.5,
                 max_tokens=1024
             )
 
-        # 2. กรณีพิมพ์ข้อความอย่างเดียว -> ใช้ llama-3.3-70b-versatile
+        # 2. กรณีส่งข้อความอย่างเดียว -> ใช้ GPT-OSS 120B (โมเดล Text หลักที่เสถียรที่สุดบน Groq)
         elif message and message.strip():
             messages_payload = [
                 {"role": "system", "content": system_prompt},
@@ -77,7 +77,7 @@ async def chat_analyze(
             ]
 
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-120b",
                 messages=messages_payload,
                 temperature=0.7,
                 max_tokens=1024
