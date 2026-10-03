@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-groq
-python-dotenv
-firebase-admin
-python-multipart
